@@ -6,6 +6,14 @@
 
 Official Ruby SDK for [Checkend](https://github.com/furvur/checkend) error monitoring. Capture and report errors from Ruby applications with automatic Rails, Rack, Sidekiq, and Solid Queue integrations.
 
+## Features
+
+- **Zero dependencies** - Uses only Ruby stdlib (Net::HTTP, JSON)
+- **Async sending** - Non-blocking error reporting via background thread
+- **Automatic context** - Captures request, user, and environment data
+- **Sensitive data filtering** - Automatically scrubs passwords, tokens, etc.
+- **Framework integrations** - Rails, Rack, Sidekiq, ActiveJob/Solid Queue
+
 ## Installation
 
 Add to your Gemfile:
@@ -42,6 +50,7 @@ That's it! The gem automatically:
 
 ```ruby
 require 'checkend-ruby'
+require 'checkend/integrations/rack'
 
 Checkend.configure do |config|
   config.api_key = ENV['CHECKEND_API_KEY']
@@ -65,8 +74,12 @@ end
 Checkend.notify(exception,
   context: { order_id: 123 },
   user: { id: current_user.id, email: current_user.email },
-  tags: ['checkout', 'payment']
+  tags: ['checkout', 'payment'],
+  fingerprint: 'custom-grouping-key'
 )
+
+# Synchronous sending (blocks until sent)
+Checkend.notify_sync(exception)
 ```
 
 ## Configuration
@@ -99,8 +112,25 @@ Checkend.configure do |config|
 
   # Optional - Async sending (default: true)
   config.async = true
+  config.max_queue_size = 1000      # Max notices to queue
+  config.shutdown_timeout = 5       # Seconds to wait on shutdown
+
+  # Optional - HTTP settings
+  config.timeout = 15               # Request timeout in seconds
+  config.open_timeout = 5           # Connection timeout in seconds
 end
 ```
+
+### Environment Variables
+
+The SDK respects these environment variables:
+
+| Variable | Description |
+|----------|-------------|
+| `CHECKEND_API_KEY` | Your ingestion API key |
+| `CHECKEND_ENDPOINT` | Custom server endpoint |
+| `CHECKEND_ENVIRONMENT` | Override environment name |
+| `CHECKEND_DEBUG` | Enable debug logging (`true`/`false`) |
 
 ## Context and User Tracking
 
@@ -119,9 +149,14 @@ Checkend.set_user(
   email: current_user.email,
   name: current_user.full_name
 )
+
+# Clear context (automatically done after each request in Rails)
+Checkend.clear!
 ```
 
-## Sidekiq Integration
+## Integrations
+
+### Sidekiq
 
 Errors in Sidekiq jobs are automatically captured:
 
@@ -131,35 +166,132 @@ require 'checkend/integrations/sidekiq'
 Checkend::Integrations::Sidekiq.install!
 ```
 
-## ActiveJob / Solid Queue Integration
+Job context (queue, class, jid, retry_count) is automatically included.
 
-ActiveJob errors are automatically captured after the retry threshold:
+### ActiveJob / Solid Queue
+
+For ActiveJob with backends other than Sidekiq/Resque:
 
 ```ruby
-# Automatically included via Rails Railtie
-# No additional configuration needed
+# config/initializers/checkend.rb
+require 'checkend/integrations/active_job'
+Checkend::Integrations::ActiveJob.install!
 ```
+
+Note: If using Sidekiq as your ActiveJob backend, use the Sidekiq integration instead for better context.
 
 ## Testing
 
-Disable error reporting in tests:
+Use the Testing module to capture notices without sending them:
 
 ```ruby
-# test/test_helper.rb
+require 'checkend/testing'
+
+# In your test setup
 Checkend::Testing.setup!
 
-# In your tests
-def test_captures_error
-  begin
-    raise StandardError, 'Test error'
-  rescue => e
-    Checkend.notify(e)
+# In your test teardown
+Checkend::Testing.teardown!
+```
+
+### Minitest Example
+
+```ruby
+class MyTest < Minitest::Test
+  def setup
+    Checkend::Testing.setup!
   end
 
-  assert_equal 1, Checkend::Testing.notices.size
-  assert_equal 'StandardError', Checkend::Testing.last_notice.error_class
+  def teardown
+    Checkend::Testing.teardown!
+  end
+
+  def test_error_is_reported
+    begin
+      raise StandardError, 'Test error'
+    rescue => e
+      Checkend.notify(e)
+    end
+
+    assert_equal 1, Checkend::Testing.notice_count
+    assert_equal 'StandardError', Checkend::Testing.last_notice.error_class
+    assert_equal 'Test error', Checkend::Testing.last_notice.message
+  end
 end
 ```
+
+### RSpec Example
+
+```ruby
+RSpec.configure do |config|
+  config.before(:each) do
+    Checkend::Testing.setup!
+  end
+
+  config.after(:each) do
+    Checkend::Testing.teardown!
+  end
+end
+
+RSpec.describe MyService do
+  it 'reports errors' do
+    expect { MyService.call }.to raise_error(StandardError)
+
+    expect(Checkend::Testing.notices?).to be true
+    expect(Checkend::Testing.last_notice.error_class).to eq('StandardError')
+  end
+end
+```
+
+### Testing API
+
+| Method | Description |
+|--------|-------------|
+| `Checkend::Testing.setup!` | Enable test mode, capture notices |
+| `Checkend::Testing.teardown!` | Restore normal mode, clear notices |
+| `Checkend::Testing.notices` | Array of captured Notice objects |
+| `Checkend::Testing.last_notice` | Most recent notice |
+| `Checkend::Testing.first_notice` | First captured notice |
+| `Checkend::Testing.notice_count` | Number of captured notices |
+| `Checkend::Testing.notices?` | True if any notices captured |
+| `Checkend::Testing.clear_notices!` | Clear captured notices |
+
+## Filtering Sensitive Data
+
+The SDK automatically filters sensitive data from:
+- Request parameters
+- Request headers
+- Context data
+- Job arguments
+
+Default filtered keys: `password`, `secret`, `token`, `api_key`, `authorization`, `credit_card`, `cvv`, `ssn`
+
+Add custom keys:
+
+```ruby
+Checkend.configure do |config|
+  config.filter_keys += ['social_security_number', 'bank_account']
+end
+```
+
+## Ignoring Exceptions
+
+Some exceptions don't need to be reported:
+
+```ruby
+Checkend.configure do |config|
+  # By class name (string)
+  config.ignored_exceptions += ['MyNotFoundError']
+
+  # By class
+  config.ignored_exceptions += [ActiveRecord::RecordNotFound]
+
+  # By pattern
+  config.ignored_exceptions += [/NotFound$/]
+end
+```
+
+Default ignored exceptions include `ActiveRecord::RecordNotFound`, `ActionController::RoutingError`, and other common "expected" errors.
 
 ## Requirements
 
@@ -177,6 +309,9 @@ bundle exec rake test
 
 # Run linter
 bundle exec rubocop
+
+# Build gem locally
+gem build checkend-ruby.gemspec
 ```
 
 ## License
