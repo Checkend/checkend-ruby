@@ -1,0 +1,211 @@
+# frozen_string_literal: true
+
+require_relative 'checkend/version'
+require_relative 'checkend/configuration'
+require_relative 'checkend/notice'
+require_relative 'checkend/notice_builder'
+require_relative 'checkend/client'
+
+# Checkend is the main module for the Checkend Ruby SDK.
+#
+# Use Checkend.configure to set up the SDK, then Checkend.notify to report errors.
+#
+# @example Basic configuration
+#   Checkend.configure do |config|
+#     config.api_key = 'your-ingestion-key'
+#   end
+#
+# @example Reporting an error
+#   begin
+#     # risky code
+#   rescue => e
+#     Checkend.notify(e)
+#   end
+#
+module Checkend
+  class << self
+    # Get the current configuration
+    #
+    # @return [Configuration] the configuration instance
+    def configuration
+      @configuration ||= Configuration.new
+    end
+
+    # Configure the Checkend SDK
+    #
+    # @yield [Configuration] the configuration instance
+    # @return [Configuration] the configuration instance
+    def configure
+      yield(configuration) if block_given?
+      start! if configuration.valid?
+      configuration
+    end
+
+    # Start the SDK (initialize client, worker, etc.)
+    #
+    # Called automatically after configure if configuration is valid.
+    def start!
+      return if @started
+
+      @started = true
+      @client = Client.new(configuration)
+      log_info("Started (environment: #{configuration.environment})")
+    end
+
+    # Stop the SDK and clean up resources
+    def stop!
+      # Worker shutdown will be added in Phase 2
+      @started = false
+      @client = nil
+      log_info('Stopped')
+    end
+
+    # ========== Primary API ==========
+
+    # Report an exception to Checkend
+    #
+    # @param exception [Exception] the exception to report
+    # @param context [Hash] additional context data
+    # @param request [Hash] request information
+    # @param user [Hash] user information
+    # @param fingerprint [String] custom fingerprint for grouping
+    # @param tags [Array<String>] tags for filtering
+    # @return [Hash, nil] the API response or nil if not sent
+    def notify(exception, context: {}, request: nil, user: nil, fingerprint: nil, tags: [])
+      return nil unless should_notify?
+      return nil if configuration.ignore_exception?(exception)
+
+      notice = NoticeBuilder.build(
+        exception: exception,
+        context: context,
+        request: request,
+        user: user,
+        fingerprint: fingerprint,
+        tags: tags
+      )
+
+      # Run before_notify callbacks
+      configuration.before_notify.each do |callback|
+        result = callback.call(notice)
+        return nil unless result
+      end
+
+      send_notice(notice)
+    end
+
+    # Report an exception synchronously (blocking)
+    #
+    # Useful for CLI tools, tests, or when you need confirmation of delivery.
+    #
+    # @param exception [Exception] the exception to report
+    # @param options [Hash] same options as notify
+    # @return [Hash, nil] the API response or nil if not sent
+    def notify_sync(exception, **options)
+      return nil unless should_notify?
+
+      notice = NoticeBuilder.build(exception: exception, **options)
+      client.send_notice(notice)
+    end
+
+    # ========== Context Management ==========
+
+    # Get the current thread-local context
+    #
+    # @return [Hash] the context hash
+    def context
+      Thread.current[:checkend_context] ||= {}
+    end
+
+    # Set context data for the current thread
+    #
+    # @param hash [Hash] context data to merge
+    def set_context(hash)
+      Thread.current[:checkend_context] ||= {}
+      Thread.current[:checkend_context].merge!(hash)
+    end
+
+    # Set user information for the current thread
+    #
+    # @param user_hash [Hash] user data (id, email, name, etc.)
+    def set_user(user_hash)
+      Thread.current[:checkend_user] = user_hash
+    end
+
+    # Get the current user
+    #
+    # @return [Hash, nil] the user hash
+    def current_user
+      Thread.current[:checkend_user]
+    end
+
+    # Clear all thread-local context and breadcrumbs
+    def clear!
+      Thread.current[:checkend_context] = nil
+      Thread.current[:checkend_user] = nil
+      Thread.current[:checkend_breadcrumbs] = nil
+    end
+
+    # ========== Breadcrumbs (stub for Phase 3) ==========
+
+    # Add a breadcrumb
+    #
+    # @param message [String] breadcrumb message
+    # @param category [String] category (ui, navigation, http, etc.)
+    # @param metadata [Hash] additional metadata
+    def add_breadcrumb(message, category: 'custom', metadata: {})
+      # Will be implemented in Phase 3
+      # For now, store in a simple array
+      Thread.current[:checkend_breadcrumbs] ||= []
+      Thread.current[:checkend_breadcrumbs] << {
+        message: message,
+        category: category,
+        metadata: metadata,
+        timestamp: Time.now.utc.iso8601
+      }
+    end
+
+    # Get current breadcrumbs
+    #
+    # @return [Array<Hash>] breadcrumbs
+    def breadcrumbs
+      Thread.current[:checkend_breadcrumbs] || []
+    end
+
+    # ========== Logging Helpers ==========
+
+    # Get the logger
+    #
+    # @return [Logger] the logger instance
+    def logger
+      configuration.resolved_logger
+    end
+
+    private
+
+    def should_notify?
+      return false unless @started
+      return false unless configuration.valid?
+      return false unless configuration.enabled?
+
+      true
+    end
+
+    def send_notice(notice)
+      # In Phase 1, always send synchronously
+      # Async worker will be added in Phase 2
+      client.send_notice(notice)
+    end
+
+    def client
+      @client ||= Client.new(configuration)
+    end
+
+    def log_info(message)
+      logger.info("[Checkend] #{message}")
+    end
+
+    def log_debug(message)
+      logger.debug("[Checkend] #{message}")
+    end
+  end
+end

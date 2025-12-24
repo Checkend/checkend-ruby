@@ -1,0 +1,66 @@
+plugins:
+  - rubocop-minitest
+  - rubocop-rake
+
+AllCops:
+  TargetRubyVersion: 2.7
+  NewCops: enable
+  Exclude:
+    - 'vendor/**/*'
+    - 'tmp/**/*'
+
+Style/StringLiterals:
+  EnforcedStyle: single_quotes
+
+Style/StringLiteralsInInterpolation:
+  EnforcedStyle: single_quotes
+
+Layout/LineLength:
+  Max: 120
+
+Metrics/BlockLength:
+  Exclude:
+    - 'test/**/*'
+    - '*.gemspec'
+
+Style/Documentation:
+  Enabled: false
+
+Naming/FileName:
+  Exclude:
+    - 'lib/checkend-ruby.rb'
+
+# Allow set_ prefix for SDK-style methods (common in error reporters)
+Naming/AccessorMethodName:
+  Enabled: false
+
+# Allow more parameters for notify method (SDK convention)
+Metrics/ParameterLists:
+  Max: 7
+
+# Allow higher ABC for HTTP handling methods
+Metrics/AbcSize:
+  Max: 26
+
+# Configuration class has many attributes by design
+Style/AccessorGrouping:
+  Enabled: false
+
+# Tests can have multiple assertions
+Minitest/MultipleAssertions:
+  Max: 15
+
+# Configuration class and test classes can be longer
+Metrics/ClassLength:
+  Max: 150
+  Exclude:
+    - 'test/**/*'
+
+Metrics/MethodLength:
+  Max: 25
+  Exclude:
+    - 'test/**/*'
+
+# Allow case-like if for readability in certain cases
+Style/CaseLikeIf:
+  Enabled: false
