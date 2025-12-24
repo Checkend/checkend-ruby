@@ -16,4 +16,5 @@ end
 # Optional integrations for testing
 group :test do
   gem 'rack', '~> 3.0'
+  gem 'rack-test', '~> 2.0'
 end
