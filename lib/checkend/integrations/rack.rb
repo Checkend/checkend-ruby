@@ -76,6 +76,9 @@ module Checkend
         end
 
         def extract_request_data(env)
+          # Guard against Rack not being loaded (defensive)
+          return extract_basic_request_data(env) unless defined?(::Rack::Request)
+
           request = ::Rack::Request.new(env)
 
           {
@@ -84,6 +87,20 @@ module Checkend
             path: env['PATH_INFO'],
             query_string: env['QUERY_STRING'],
             params: extract_params(request),
+            headers: extract_headers(env),
+            remote_ip: extract_remote_ip(env),
+            user_agent: env['HTTP_USER_AGENT'],
+            referer: env['HTTP_REFERER'],
+            content_type: env['CONTENT_TYPE'],
+            content_length: env['CONTENT_LENGTH']
+          }.compact
+        end
+
+        def extract_basic_request_data(env)
+          {
+            method: env['REQUEST_METHOD'],
+            path: env['PATH_INFO'],
+            query_string: env['QUERY_STRING'],
             headers: extract_headers(env),
             remote_ip: extract_remote_ip(env),
             user_agent: env['HTTP_USER_AGENT'],

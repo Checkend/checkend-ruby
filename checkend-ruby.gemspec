@@ -28,5 +28,7 @@ Gem::Specification.new do |spec|
   spec.require_paths = ['lib']
 
   # Ruby stdlib gems that are being extracted (future-proofing for Ruby 3.5+)
+  spec.add_dependency 'json'
   spec.add_dependency 'logger'
+  spec.add_dependency 'uri'
 end
