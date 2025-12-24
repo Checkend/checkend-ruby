@@ -22,9 +22,6 @@ module Checkend
     attr_accessor :request
     attr_accessor :user
 
-    # Breadcrumbs
-    attr_accessor :breadcrumbs
-
     # Metadata
     attr_accessor :environment
     attr_accessor :occurred_at
@@ -35,7 +32,6 @@ module Checkend
       @context = {}
       @request = {}
       @user = {}
-      @breadcrumbs = []
       @occurred_at = Time.now.utc.iso8601
     end
 
@@ -55,7 +51,6 @@ module Checkend
         context: context_with_environment,
         request: request || {},
         user: user || {},
-        breadcrumbs: breadcrumbs || [],
         notifier: notifier_payload
       }.compact
     end

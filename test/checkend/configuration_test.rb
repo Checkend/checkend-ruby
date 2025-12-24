@@ -23,8 +23,6 @@ class ConfigurationTest < Minitest::Test
     assert_equal 5, config.open_timeout
     assert config.ssl_verify
     assert config.send_request_data
-    assert config.breadcrumbs_enabled
-    assert_equal 40, config.max_breadcrumbs
     assert config.async
     assert_equal 1000, config.max_queue_size
     refute config.debug

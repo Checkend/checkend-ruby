@@ -42,10 +42,6 @@ module Checkend
     attr_accessor :send_environment
     attr_accessor :send_user_data
 
-    # Breadcrumbs
-    attr_accessor :breadcrumbs_enabled
-    attr_accessor :max_breadcrumbs
-
     # Async settings
     attr_accessor :async
     attr_accessor :max_queue_size
@@ -103,8 +99,6 @@ module Checkend
       @send_session_data = true
       @send_environment = false
       @send_user_data = true
-      @breadcrumbs_enabled = true
-      @max_breadcrumbs = 40
       @async = true
       @max_queue_size = 1000
       @shutdown_timeout = 5

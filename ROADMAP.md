@@ -84,47 +84,7 @@
   - [ ] test/checkend/filters/sanitize_filter_test.rb
   - [ ] test/checkend/filters/ignore_filter_test.rb
 
-### Phase 3: Breadcrumbs & Context
-
-- [ ] **Ring Buffer** (`lib/checkend/breadcrumbs/ring_buffer.rb`)
-  - [ ] Fixed-size circular buffer
-  - [ ] Thread-safe with Mutex
-  - [ ] Enumerable mixin
-  - [ ] clear, size, to_a methods
-
-- [ ] **Breadcrumb Struct** (`lib/checkend/breadcrumbs/breadcrumb.rb`)
-  - [ ] message, category, metadata, timestamp
-  - [ ] Valid categories: request, query, render, cache, job, ui, custom
-  - [ ] Truncate message to 200 chars
-  - [ ] to_h for serialization
-
-- [ ] **Breadcrumb Collector** (`lib/checkend/breadcrumbs/collector.rb`)
-  - [ ] Uses RingBuffer internally
-  - [ ] add(breadcrumb) method
-  - [ ] to_a returns array of hashes
-  - [ ] clear and size methods
-
-- [ ] **Context Class** (`lib/checkend/context.rb`)
-  - [ ] Thread-safe hash storage with Mutex
-  - [ ] user accessor for user info
-  - [ ] merge! for adding context
-  - [ ] to_h and clear methods
-
-- [ ] **Thread-Local Storage**
-  - [ ] Checkend.context returns Thread.current[:checkend_context]
-  - [ ] Checkend.breadcrumbs returns Thread.current[:checkend_breadcrumbs]
-  - [ ] Checkend.set_context(hash) helper
-  - [ ] Checkend.set_user(hash) helper
-  - [ ] Checkend.add_breadcrumb(message, category:, metadata:) helper
-  - [ ] Checkend.clear! resets both context and breadcrumbs
-
-- [ ] **Unit Tests**
-  - [ ] test/checkend/breadcrumbs/ring_buffer_test.rb
-  - [ ] test/checkend/breadcrumbs/breadcrumb_test.rb
-  - [ ] test/checkend/breadcrumbs/collector_test.rb
-  - [ ] test/checkend/context_test.rb
-
-### Phase 4: Integrations
+### Phase 3: Integrations
 
 - [ ] **Rack Middleware** (`lib/checkend/integrations/rack.rb`)
   - [ ] Checkend::Integrations::Rack::Middleware class
@@ -132,19 +92,13 @@
   - [ ] Re-raise after notifying
   - [ ] Capture request info (url, method, params, headers, ip)
   - [ ] Filter sensitive headers (Cookie, Authorization)
-  - [ ] Add request breadcrumb on entry
-  - [ ] Clear context/breadcrumbs on request end
+  - [ ] Clear context on request end
 
 - [ ] **Rails Railtie** (`lib/checkend/integrations/rails.rb`)
   - [ ] Checkend::Integrations::Rails < Rails::Railtie
   - [ ] Set root_path, environment, logger from Rails
   - [ ] Insert middleware after ActionDispatch::DebugExceptions
   - [ ] Include controller methods via ActiveSupport.on_load
-  - [ ] Setup breadcrumb subscribers for AS notifications:
-    - [ ] sql.active_record
-    - [ ] process_action.action_controller
-    - [ ] render_template.action_view
-    - [ ] cache_read/write/delete.active_support
 
 - [ ] **Rails Controller Methods**
   - [ ] before_action to set context (controller, action, request_id)
@@ -158,7 +112,6 @@
   - [ ] Checkend::Integrations::Sidekiq.install! class method
   - [ ] Capture job context (queue, class, jid, retry_count)
   - [ ] Sanitize job arguments
-  - [ ] Add job breadcrumb
 
 - [ ] **ActiveJob Integration** (`lib/checkend/integrations/active_job.rb`)
   - [ ] Checkend::Integrations::ActiveJob::Extension module
@@ -166,7 +119,6 @@
   - [ ] Set job context (class, id, queue, executions)
   - [ ] Only report after retry threshold (default: 1)
   - [ ] Skip if adapter handles errors (Sidekiq, Resque)
-  - [ ] Add enqueue breadcrumb
 
 - [ ] **Integration Tests**
   - [ ] test/checkend/integrations/rack_test.rb
@@ -174,7 +126,7 @@
   - [ ] test/checkend/integrations/sidekiq_test.rb (conditional)
   - [ ] test/checkend/integrations/active_job_test.rb (conditional)
 
-### Phase 5: Testing & Release
+### Phase 4: Testing & Release
 
 - [ ] **Testing Module** (`lib/checkend/testing.rb`)
   - [ ] Checkend::Testing.setup! disables async, stubs client
@@ -214,7 +166,6 @@
 | Dependencies | Zero (stdlib only) | Like Honeybadger - no version conflicts |
 | HTTP client | Net::HTTP | Part of stdlib, no dependencies |
 | Async sending | Background thread + Mutex/Queue | Non-blocking, stdlib only |
-| Breadcrumbs | Ring buffer (40 items) | Fixed memory, recent items only |
 | Context storage | Thread-local variables | Safe for concurrent requests |
 | Rails integration | Railtie | Auto-configuration on boot |
 | Testing | Minitest | Matches Checkend server conventions |
@@ -235,11 +186,6 @@ checkend-ruby/
 │       ├── notice.rb
 │       ├── notice_builder.rb
 │       ├── worker.rb
-│       ├── context.rb
-│       ├── breadcrumbs/
-│       │   ├── breadcrumb.rb
-│       │   ├── ring_buffer.rb
-│       │   └── collector.rb
 │       ├── filters/
 │       │   ├── sanitize_filter.rb
 │       │   └── ignore_filter.rb
@@ -257,11 +203,6 @@ checkend-ruby/
 │       ├── notice_test.rb
 │       ├── notice_builder_test.rb
 │       ├── worker_test.rb
-│       ├── context_test.rb
-│       ├── breadcrumbs/
-│       │   ├── ring_buffer_test.rb
-│       │   ├── breadcrumb_test.rb
-│       │   └── collector_test.rb
 │       ├── filters/
 │       │   ├── sanitize_filter_test.rb
 │       │   └── ignore_filter_test.rb

@@ -37,7 +37,6 @@ That's it! The gem automatically:
 - Installs Rack middleware to capture unhandled exceptions
 - Tracks request context (URL, params, headers)
 - Captures current user info if `current_user` is available
-- Records breadcrumbs from ActiveSupport notifications
 
 ### Rack / Sinatra
 
@@ -100,10 +99,6 @@ Checkend.configure do |config|
 
   # Optional - Async sending (default: true)
   config.async = true
-
-  # Optional - Breadcrumbs (default: enabled, max 40)
-  config.breadcrumbs_enabled = true
-  config.max_breadcrumbs = 40
 end
 ```
 
@@ -124,22 +119,6 @@ Checkend.set_user(
   email: current_user.email,
   name: current_user.full_name
 )
-```
-
-## Breadcrumbs
-
-Breadcrumbs track events leading up to an error:
-
-```ruby
-# Automatic breadcrumbs (Rails)
-# - SQL queries
-# - Controller actions
-# - View renders
-# - Cache operations
-
-# Manual breadcrumbs
-Checkend.add_breadcrumb('User clicked checkout', category: 'ui')
-Checkend.add_breadcrumb('Payment processed', category: 'payment', metadata: { amount: 99.99 })
 ```
 
 ## Sidekiq Integration
