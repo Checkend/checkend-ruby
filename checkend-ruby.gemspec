@@ -27,8 +27,11 @@ Gem::Specification.new do |spec|
 
   spec.require_paths = ['lib']
 
-  # Ruby stdlib gems that are being extracted (future-proofing for Ruby 3.5+)
-  spec.add_dependency 'json'
-  spec.add_dependency 'logger'
-  spec.add_dependency 'uri'
+  # Ruby stdlib gems being extracted in Ruby 3.4+/3.5+
+  # Only add as dependencies for Ruby versions where they're no longer bundled
+  if Gem::Version.new(RUBY_VERSION) >= Gem::Version.new('3.4')
+    spec.add_dependency 'json'
+    spec.add_dependency 'logger'
+    spec.add_dependency 'uri'
+  end
 end
