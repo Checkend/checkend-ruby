@@ -100,10 +100,7 @@ module Checkend
       )
 
       # Run before_notify callbacks
-      configuration.before_notify.each do |callback|
-        result = callback.call(notice)
-        return nil unless result
-      end
+      return nil unless before_notify_callbacks_allow?(notice)
 
       send_notice(notice)
     end
@@ -159,6 +156,19 @@ module Checkend
       Thread.current[:checkend_user] = nil
     end
 
+    # Reset all SDK state (useful for testing)
+    #
+    # @return [void]
+    def reset!
+      stop!(timeout: 0) if @started
+      @configuration = nil
+      @client = nil
+      @worker = nil
+      @started = false
+      @at_exit_installed = nil
+      clear!
+    end
+
     # ========== Logging Helpers ==========
 
     # Get the logger
@@ -175,6 +185,17 @@ module Checkend
       return false unless configuration.valid?
       return false unless configuration.enabled?
 
+      true
+    end
+
+    def before_notify_callbacks_allow?(notice)
+      configuration.before_notify.each do |callback|
+        result = callback.call(notice)
+        return false unless result
+      rescue StandardError => e
+        log_debug("before_notify callback failed: #{e.message}")
+        # Continue with other callbacks
+      end
       true
     end
 
