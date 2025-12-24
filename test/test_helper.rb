@@ -17,16 +17,19 @@ module CheckendTestHelper
     # Reset Checkend state before each test
     Checkend.instance_variable_set(:@configuration, nil)
     Checkend.instance_variable_set(:@client, nil)
+    Checkend.instance_variable_set(:@worker, nil)
     Checkend.instance_variable_set(:@started, false)
+    Checkend.instance_variable_set(:@at_exit_installed, nil)
     Checkend.clear!
   end
 
-  def configure_checkend(api_key: VALID_API_KEY, endpoint: TEST_ENDPOINT, **options)
+  def configure_checkend(api_key: VALID_API_KEY, endpoint: TEST_ENDPOINT, async: false, **options)
     Checkend.configure do |config|
       config.api_key = api_key
       config.endpoint = endpoint
       config.environment = 'test'
       config.enabled = true
+      config.async = async # Disable async by default in tests
       options.each { |key, value| config.send("#{key}=", value) }
     end
   end

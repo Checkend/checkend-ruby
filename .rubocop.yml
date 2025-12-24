@@ -64,3 +64,16 @@ Metrics/MethodLength:
 # Allow case-like if for readability in certain cases
 Style/CaseLikeIf:
   Enabled: false
+
+# Main module is large by design
+Metrics/ModuleLength:
+  Max: 150
+
+# push returns boolean, not a predicate
+Naming/PredicateMethod:
+  AllowedMethods:
+    - push
+
+# Allow assert true for crash tests
+Minitest/UselessAssertion:
+  Enabled: false

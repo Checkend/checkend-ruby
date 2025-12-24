@@ -5,6 +5,9 @@ require_relative 'checkend/configuration'
 require_relative 'checkend/notice'
 require_relative 'checkend/notice_builder'
 require_relative 'checkend/client'
+require_relative 'checkend/worker'
+require_relative 'checkend/filters/sanitize_filter'
+require_relative 'checkend/filters/ignore_filter'
 
 # Checkend is the main module for the Checkend Ruby SDK.
 #
@@ -49,15 +52,27 @@ module Checkend
 
       @started = true
       @client = Client.new(configuration)
-      log_info("Started (environment: #{configuration.environment})")
+      @worker = Worker.new(configuration) if configuration.async
+      install_at_exit_hook
+      log_info("Started (environment: #{configuration.environment}, async: #{configuration.async})")
     end
 
     # Stop the SDK and clean up resources
-    def stop!
-      # Worker shutdown will be added in Phase 2
+    #
+    # @param timeout [Integer] seconds to wait for pending notices
+    def stop!(timeout: nil)
+      @worker&.shutdown(timeout: timeout)
+      @worker = nil
       @started = false
       @client = nil
       log_info('Stopped')
+    end
+
+    # Flush pending notices, blocking until sent
+    #
+    # @param timeout [Integer] seconds to wait
+    def flush(timeout: nil)
+      @worker&.flush(timeout: timeout)
     end
 
     # ========== Primary API ==========
@@ -191,13 +206,23 @@ module Checkend
     end
 
     def send_notice(notice)
-      # In Phase 1, always send synchronously
-      # Async worker will be added in Phase 2
-      client.send_notice(notice)
+      if configuration.async && @worker
+        @worker.push(notice)
+        nil # Async doesn't return result
+      else
+        client.send_notice(notice)
+      end
     end
 
     def client
       @client ||= Client.new(configuration)
+    end
+
+    def install_at_exit_hook
+      return if @at_exit_installed
+
+      @at_exit_installed = true
+      at_exit { stop! }
     end
 
     def log_info(message)
