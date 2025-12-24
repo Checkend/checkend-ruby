@@ -244,4 +244,31 @@ class RackMiddlewareTest < Minitest::Test
     assert_equal 123, user_data['id']
     assert_equal 'test@example.com', user_data['email']
   end
+
+  def test_extract_basic_request_data_works_without_rack_request
+    configure_checkend
+    middleware = Checkend::Integrations::Rack::Middleware.new(nil)
+
+    env = {
+      'REQUEST_METHOD' => 'POST',
+      'PATH_INFO' => '/api/test',
+      'QUERY_STRING' => 'key=value',
+      'HTTP_USER_AGENT' => 'TestAgent',
+      'HTTP_REFERER' => 'https://example.com',
+      'CONTENT_TYPE' => 'application/json',
+      'CONTENT_LENGTH' => '100',
+      'REMOTE_ADDR' => '192.168.1.1'
+    }
+
+    data = middleware.send(:extract_basic_request_data, env)
+
+    assert_equal 'POST', data[:method]
+    assert_equal '/api/test', data[:path]
+    assert_equal 'key=value', data[:query_string]
+    assert_equal 'TestAgent', data[:user_agent]
+    assert_equal 'https://example.com', data[:referer]
+    assert_equal 'application/json', data[:content_type]
+    assert_equal '100', data[:content_length]
+    assert_equal '192.168.1.1', data[:remote_ip]
+  end
 end
