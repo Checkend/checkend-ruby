@@ -185,6 +185,19 @@ class CheckendTest < Minitest::Test
     assert_equal 'test@example.com', Checkend.current_user[:email]
   end
 
+  def test_set_user_includes_user_in_notice_payload
+    configure_checkend
+    Checkend.set_user(id: 456, email: 'user@example.com')
+
+    stub = stub_request(:post, "#{TEST_ENDPOINT}/ingest/v1/errors")
+           .with { |req| JSON.parse(req.body)['user']['id'] == 456 }
+           .to_return(status: 201, body: { id: 1, problem_id: 1 }.to_json)
+
+    Checkend.notify(sample_exception)
+
+    assert_requested stub
+  end
+
   def test_clear_resets_all_thread_local_data
     configure_checkend
     Checkend.set_context(key: 'value')

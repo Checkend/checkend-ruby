@@ -78,10 +78,7 @@ module Checkend
       end
 
       def thread_local_user
-        ctx = Thread.current[:checkend_context]
-        return nil unless ctx
-
-        ctx.respond_to?(:user) ? ctx.user : nil
+        Thread.current[:checkend_user]
       end
     end
   end
