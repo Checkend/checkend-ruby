@@ -21,6 +21,16 @@ class NoticeTest < Minitest::Test
     assert_match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/, notice.occurred_at)
   end
 
+  def test_to_h_includes_occurred_at_in_error_payload
+    notice = Checkend::Notice.new
+    notice.error_class = 'TestError'
+    notice.occurred_at = '2024-12-24T10:30:00Z'
+
+    hash = notice.to_h
+
+    assert_equal '2024-12-24T10:30:00Z', hash[:error][:occurred_at]
+  end
+
   def test_to_h_includes_error_payload
     notice = Checkend::Notice.new
     notice.error_class = 'NoMethodError'
