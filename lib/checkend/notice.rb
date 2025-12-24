@@ -61,7 +61,8 @@ module Checkend
       payload = {
         class: error_class,
         message: message,
-        backtrace: backtrace || []
+        backtrace: backtrace || [],
+        occurred_at: occurred_at
       }
       payload[:fingerprint] = fingerprint if fingerprint
       payload[:tags] = tags if tags && !tags.empty?
