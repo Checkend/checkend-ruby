@@ -21,6 +21,7 @@ class CheckendTest < Minitest::Test
 
   def test_configure_does_not_start_without_api_key
     Checkend.configure do |config|
+      config.api_key = nil # Explicitly clear (env var may be set)
       config.endpoint = TEST_ENDPOINT
     end
 
