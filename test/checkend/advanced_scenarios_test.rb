@@ -250,12 +250,13 @@ class AdvancedScenariosTest < Minitest::Test
 
     Checkend.configuration.before_notify << ->(_notice) { raise 'Callback exploded!' }
 
-    stub_ingest_api
+    stub = stub_ingest_api
 
-    # Should not raise, but also won't send (exception bubbles)
-    assert_raises(RuntimeError) do
-      Checkend.notify(sample_exception)
-    end
+    # Callback exception is caught, notice is still sent
+    result = Checkend.notify(sample_exception)
+
+    assert_requested stub
+    assert_equal 123, result['id']
   end
 
   def test_callback_with_nil_return_treated_as_falsy

@@ -15,12 +15,7 @@ module CheckendTestHelper
 
   def setup
     # Reset Checkend state before each test
-    Checkend.instance_variable_set(:@configuration, nil)
-    Checkend.instance_variable_set(:@client, nil)
-    Checkend.instance_variable_set(:@worker, nil)
-    Checkend.instance_variable_set(:@started, false)
-    Checkend.instance_variable_set(:@at_exit_installed, nil)
-    Checkend.clear!
+    Checkend.reset!
   end
 
   def configure_checkend(api_key: VALID_API_KEY, endpoint: TEST_ENDPOINT, async: false, **options)

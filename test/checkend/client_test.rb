@@ -93,6 +93,15 @@ class ClientTest < Minitest::Test
     assert_nil result
   end
 
+  def test_send_notice_bad_request
+    stub_ingest_api(status: 400, body: { error: 'Malformed JSON' })
+
+    client = Checkend::Client.new(@config)
+    result = client.send_notice(build_test_notice)
+
+    assert_nil result
+  end
+
   def test_send_notice_network_error
     stub_request(:post, "#{TEST_ENDPOINT}/ingest/v1/errors")
       .to_timeout

@@ -224,4 +224,37 @@ class CheckendTest < Minitest::Test
 
     assert_instance_of Logger, Checkend.logger
   end
+
+  def test_reset_clears_all_state
+    configure_checkend
+    Checkend.set_context(key: 'value')
+    Checkend.set_user(id: 123)
+
+    Checkend.reset!
+
+    refute Checkend.instance_variable_get(:@started)
+    assert_nil Checkend.instance_variable_get(:@configuration)
+    assert_nil Checkend.instance_variable_get(:@client)
+    assert_empty Checkend.context
+    assert_nil Checkend.current_user
+  end
+
+  def test_before_notify_callback_exception_does_not_prevent_send
+    configure_checkend
+
+    # First callback raises, second should still run
+    Checkend.configuration.before_notify << ->(_notice) { raise 'Callback error!' }
+    Checkend.configuration.before_notify << lambda { |notice|
+      notice.context[:second_callback_ran] = true
+      true
+    }
+
+    stub = stub_request(:post, "#{TEST_ENDPOINT}/ingest/v1/errors")
+           .with { |req| JSON.parse(req.body)['context']['second_callback_ran'] == true }
+           .to_return(status: 201, body: { id: 1, problem_id: 1 }.to_json)
+
+    Checkend.notify(sample_exception)
+
+    assert_requested stub
+  end
 end

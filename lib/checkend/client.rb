@@ -72,6 +72,9 @@ module Checkend
         result = JSON.parse(response.body)
         log_debug("Notice sent successfully: id=#{result['id']} problem_id=#{result['problem_id']}")
         result
+      when 400
+        log_warn("Bad request: #{response.body}")
+        nil
       when 401
         log_error('Authentication failed - check your API key')
         nil
