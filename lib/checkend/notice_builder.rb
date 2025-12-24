@@ -34,9 +34,6 @@ module Checkend
         notice.user = user || thread_local_user
         notice.request = request || {}
 
-        # Breadcrumbs from thread-local storage
-        notice.breadcrumbs = thread_local_breadcrumbs
-
         # Environment
         notice.environment = Checkend.configuration.environment
 
@@ -85,13 +82,6 @@ module Checkend
         return nil unless ctx
 
         ctx.respond_to?(:user) ? ctx.user : nil
-      end
-
-      def thread_local_breadcrumbs
-        collector = Thread.current[:checkend_breadcrumbs]
-        return [] unless collector
-
-        collector.respond_to?(:to_a) ? collector.to_a : []
       end
     end
   end

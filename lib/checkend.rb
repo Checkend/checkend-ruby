@@ -153,37 +153,10 @@ module Checkend
       Thread.current[:checkend_user]
     end
 
-    # Clear all thread-local context and breadcrumbs
+    # Clear all thread-local context
     def clear!
       Thread.current[:checkend_context] = nil
       Thread.current[:checkend_user] = nil
-      Thread.current[:checkend_breadcrumbs] = nil
-    end
-
-    # ========== Breadcrumbs (stub for Phase 3) ==========
-
-    # Add a breadcrumb
-    #
-    # @param message [String] breadcrumb message
-    # @param category [String] category (ui, navigation, http, etc.)
-    # @param metadata [Hash] additional metadata
-    def add_breadcrumb(message, category: 'custom', metadata: {})
-      # Will be implemented in Phase 3
-      # For now, store in a simple array
-      Thread.current[:checkend_breadcrumbs] ||= []
-      Thread.current[:checkend_breadcrumbs] << {
-        message: message,
-        category: category,
-        metadata: metadata,
-        timestamp: Time.now.utc.iso8601
-      }
-    end
-
-    # Get current breadcrumbs
-    #
-    # @return [Array<Hash>] breadcrumbs
-    def breadcrumbs
-      Thread.current[:checkend_breadcrumbs] || []
     end
 
     # ========== Logging Helpers ==========

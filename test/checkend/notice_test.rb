@@ -11,7 +11,6 @@ class NoticeTest < Minitest::Test
     assert_empty(notice.context)
     assert_empty(notice.request)
     assert_empty(notice.user)
-    assert_empty notice.breadcrumbs
     refute_nil notice.occurred_at
   end
 
@@ -117,19 +116,6 @@ class NoticeTest < Minitest::Test
 
     assert_equal 456, hash[:user][:id]
     assert_equal 'test@example.com', hash[:user][:email]
-  end
-
-  def test_to_h_includes_breadcrumbs
-    notice = Checkend::Notice.new
-    notice.error_class = 'TestError'
-    notice.breadcrumbs = [
-      { message: 'User clicked', category: 'ui', timestamp: '2025-01-01T00:00:00Z' }
-    ]
-
-    hash = notice.to_h
-
-    assert_equal 1, hash[:breadcrumbs].length
-    assert_equal 'User clicked', hash[:breadcrumbs][0][:message]
   end
 
   def test_to_h_includes_notifier

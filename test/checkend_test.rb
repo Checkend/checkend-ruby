@@ -184,37 +184,15 @@ class CheckendTest < Minitest::Test
     assert_equal 'test@example.com', Checkend.current_user[:email]
   end
 
-  def test_add_breadcrumb
-    configure_checkend
-
-    Checkend.add_breadcrumb('User clicked button', category: 'ui')
-
-    assert_equal 1, Checkend.breadcrumbs.length
-    assert_equal 'User clicked button', Checkend.breadcrumbs.first[:message]
-    assert_equal 'ui', Checkend.breadcrumbs.first[:category]
-  end
-
-  def test_add_breadcrumb_with_metadata
-    configure_checkend
-
-    Checkend.add_breadcrumb('API call', category: 'http', metadata: { status: 200 })
-
-    breadcrumb = Checkend.breadcrumbs.first
-
-    assert_equal 200, breadcrumb[:metadata][:status]
-  end
-
   def test_clear_resets_all_thread_local_data
     configure_checkend
     Checkend.set_context(key: 'value')
     Checkend.set_user(id: 123)
-    Checkend.add_breadcrumb('test')
 
     Checkend.clear!
 
     assert_empty(Checkend.context)
     assert_nil Checkend.current_user
-    assert_empty Checkend.breadcrumbs
   end
 
   def test_stop_resets_started_state

@@ -41,8 +41,6 @@ gem install checkend-ruby-*.gem
 - `Notice` - Data structure for error payload
 - `NoticeBuilder` - Converts exceptions to Notice objects
 - `Worker` - Background thread for async sending
-- `Context` - Thread-local context storage
-- `Breadcrumbs::Collector` - Ring buffer for breadcrumb storage
 
 ### Integrations
 
@@ -61,7 +59,7 @@ gem install checkend-ruby-*.gem
 1. **Zero Dependencies** - Use only Ruby stdlib (Net::HTTP, JSON, etc.)
 2. **Thread Safety** - All shared state uses Mutex or thread-local variables
 3. **Non-Blocking** - Default async sending via background thread
-4. **Minimal Overhead** - Lazy loading, efficient ring buffer for breadcrumbs
+4. **Minimal Overhead** - Lazy loading, efficient data structures
 5. **Graceful Degradation** - Never raise exceptions from SDK code
 
 ## Target API Contract
