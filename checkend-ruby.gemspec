@@ -6,7 +6,7 @@ Gem::Specification.new do |spec|
   spec.name          = 'checkend-ruby'
   spec.version       = Checkend::VERSION
   spec.authors       = ['Simon Chiu']
-  spec.email         = ['checkend@furvur.com']
+  spec.email         = ['simon@checkend.com']
 
   spec.summary       = 'Ruby SDK for Checkend error monitoring'
   spec.description   = 'Capture and report errors from Ruby applications to Checkend. ' \
