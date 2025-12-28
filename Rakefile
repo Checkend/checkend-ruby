@@ -12,4 +12,9 @@ end
 require 'rubocop/rake_task'
 RuboCop::RakeTask.new
 
+desc 'Install git hooks'
+task :install_hooks do
+  system('./scripts/install-hooks.sh')
+end
+
 task default: %i[test rubocop]
