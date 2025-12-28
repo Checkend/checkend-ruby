@@ -1,7 +1,7 @@
 # Checkend Ruby
 
 [![Gem Version](https://badge.fury.io/rb/checkend-ruby.svg)](https://badge.fury.io/rb/checkend-ruby)
-[![CI](https://github.com/furvur/checkend-ruby/actions/workflows/ci.yml/badge.svg)](https://github.com/furvur/checkend-ruby/actions/workflows/ci.yml)
+[![CI](https://github.com/Checkend/checkend-ruby/actions/workflows/ci.yml/badge.svg)](https://github.com/Checkend/checkend-ruby/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 Official Ruby SDK for [Checkend](https://github.com/furvur/checkend) error monitoring. Capture and report errors from Ruby applications with automatic Rails, Rack, Sidekiq, and Solid Queue integrations.
