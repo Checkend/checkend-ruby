@@ -1,0 +1,80 @@
+name: Publish to RubyGems
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (e.g., 1.0.0)'
+        required: true
+        type: string
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+
+      - name: Update version
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          sed -i "s/VERSION = '.*'/VERSION = '${{ inputs.version }}'/" lib/checkend/version.rb
+
+      - name: Run tests
+        run: bundle exec rake test
+
+      - name: Run linter
+        run: bundle exec rubocop
+
+      - name: Build gem
+        run: gem build checkend-ruby.gemspec
+
+      - name: Configure git
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Install git-cliff
+        if: github.event_name == 'workflow_dispatch'
+        uses: kenji-miyake/setup-git-cliff@v2
+
+      - name: Generate changelog
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          git-cliff --tag "v${{ inputs.version }}" -o CHANGELOG.md
+
+      - name: Commit version and changelog
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          git add lib/checkend/version.rb CHANGELOG.md
+          git commit -m "Release v${{ inputs.version }}"
+          git push
+
+      - name: Create tag and release
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git tag "v${{ inputs.version }}"
+          git push origin "v${{ inputs.version }}"
+          gh release create "v${{ inputs.version }}" \
+            --title "v${{ inputs.version }}" \
+            --generate-notes
+
+      - name: Publish to RubyGems
+        run: |
+          mkdir -p ~/.gem
+          echo -e "---\n:rubygems_api_key: ${{ secrets.RUBYGEMS_API_KEY }}" > ~/.gem/credentials
+          chmod 0600 ~/.gem/credentials
+          gem push checkend-ruby-*.gem
