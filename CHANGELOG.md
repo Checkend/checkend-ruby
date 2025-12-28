@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Configuration Options**
   - `api_key` - Required ingestion API key
-  - `endpoint` - Checkend server URL (default: https://app.checkend.io)
+  - `endpoint` - Required self-hosted Checkend server URL
   - `environment` - Auto-detected from Rails.env or RACK_ENV
   - `enabled` - Enable/disable reporting (default: true in production/staging)
   - `ignored_exceptions` - Exceptions to skip reporting
@@ -60,5 +60,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Ruby >= 2.7.0
 - No runtime dependencies (uses Ruby stdlib only)
 
-[Unreleased]: https://github.com/furvur/checkend-ruby/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/furvur/checkend-ruby/releases/tag/v1.0.0
+[Unreleased]: https://github.com/Checkend/checkend-ruby/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/Checkend/checkend-ruby/releases/tag/v1.0.0

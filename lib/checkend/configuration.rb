@@ -9,7 +9,7 @@ module Checkend
   #
   #   Checkend.configure do |config|
   #     config.api_key = 'your-ingestion-key'
-  #     config.endpoint = 'https://checkend.example.com'
+  #     config.endpoint = 'https://your-checkend-server.com'
   #   end
   #
   class Configuration
@@ -51,8 +51,6 @@ module Checkend
     attr_accessor :logger
     attr_accessor :debug
 
-    DEFAULT_ENDPOINT = 'https://app.checkend.io'
-
     DEFAULT_FILTER_KEYS = %w[
       password
       password_confirmation
@@ -86,7 +84,7 @@ module Checkend
 
     def initialize
       @api_key = ENV.fetch('CHECKEND_API_KEY', nil)
-      @endpoint = ENV.fetch('CHECKEND_ENDPOINT', DEFAULT_ENDPOINT)
+      @endpoint = ENV.fetch('CHECKEND_ENDPOINT', nil)
       @environment = detect_environment
       @enabled = nil # Will be computed based on environment
       @timeout = 15

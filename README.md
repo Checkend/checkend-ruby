@@ -37,7 +37,7 @@ Add an initializer at `config/initializers/checkend.rb`:
 ```ruby
 Checkend.configure do |config|
   config.api_key = Rails.application.credentials.checkend[:api_key]
-  # Or use environment variable: ENV['CHECKEND_API_KEY']
+  config.endpoint = 'https://your-checkend-server.com'  # Your self-hosted Checkend URL
 end
 ```
 
@@ -54,7 +54,7 @@ require 'checkend/integrations/rack'
 
 Checkend.configure do |config|
   config.api_key = ENV['CHECKEND_API_KEY']
-  config.endpoint = 'https://checkend.example.com'
+  config.endpoint = 'https://your-checkend-server.com'
 end
 
 use Checkend::Integrations::Rack::Middleware
@@ -89,8 +89,8 @@ Checkend.configure do |config|
   # Required
   config.api_key = 'your-ingestion-key'
 
-  # Optional - Checkend server URL (default: https://app.checkend.io)
-  config.endpoint = 'https://checkend.example.com'
+  # Required - Your self-hosted Checkend server URL
+  config.endpoint = 'https://your-checkend-server.com'
 
   # Optional - Environment name (auto-detected from Rails.env or RACK_ENV)
   config.environment = 'production'

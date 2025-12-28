@@ -17,7 +17,7 @@ class ConfigurationTest < Minitest::Test
     config = Checkend::Configuration.new
 
     assert_nil config.api_key
-    assert_equal 'https://app.checkend.io', config.endpoint
+    assert_nil config.endpoint
     assert_equal 'development', config.environment
     assert_equal 15, config.timeout
     assert_equal 5, config.open_timeout
