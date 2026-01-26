@@ -257,4 +257,156 @@ class CheckendTest < Minitest::Test
 
     assert_requested stub
   end
+
+  # ========== Custom Notification Tests (String/Hash) ==========
+
+  def test_notify_with_string_message
+    configure_checkend
+    stub = stub_request(:post, "#{TEST_ENDPOINT}/ingest/v1/errors")
+           .with { |req|
+             body = JSON.parse(req.body)
+             body['error']['class'] == 'Checkend::Notice' &&
+               body['error']['message'] == 'Something went wrong' &&
+               body['error']['backtrace'] == []
+           }
+           .to_return(status: 201, body: { id: 1, problem_id: 1 }.to_json)
+
+    Checkend.notify('Something went wrong')
+
+    assert_requested stub
+  end
+
+  def test_notify_with_string_and_custom_error_class
+    configure_checkend
+    stub = stub_request(:post, "#{TEST_ENDPOINT}/ingest/v1/errors")
+           .with { |req|
+             body = JSON.parse(req.body)
+             body['error']['class'] == 'RateLimitExceeded' &&
+               body['error']['message'] == 'User exceeded rate limit'
+           }
+           .to_return(status: 201, body: { id: 1, problem_id: 1 }.to_json)
+
+    Checkend.notify('User exceeded rate limit', error_class: 'RateLimitExceeded')
+
+    assert_requested stub
+  end
+
+  def test_notify_with_string_and_context
+    configure_checkend
+    stub = stub_request(:post, "#{TEST_ENDPOINT}/ingest/v1/errors")
+           .with { |req|
+             body = JSON.parse(req.body)
+             body['error']['message'] == 'Custom alert' &&
+               body['context']['severity'] == 'high'
+           }
+           .to_return(status: 201, body: { id: 1, problem_id: 1 }.to_json)
+
+    Checkend.notify('Custom alert', context: { severity: 'high' })
+
+    assert_requested stub
+  end
+
+  def test_notify_with_hash
+    configure_checkend
+    stub = stub_request(:post, "#{TEST_ENDPOINT}/ingest/v1/errors")
+           .with { |req|
+             body = JSON.parse(req.body)
+             body['error']['class'] == 'DataValidationError' &&
+               body['error']['message'] == 'Invalid email format'
+           }
+           .to_return(status: 201, body: { id: 1, problem_id: 1 }.to_json)
+
+    Checkend.notify({ error_class: 'DataValidationError', message: 'Invalid email format' })
+
+    assert_requested stub
+  end
+
+  def test_notify_with_hash_and_backtrace
+    configure_checkend
+    stub = stub_request(:post, "#{TEST_ENDPOINT}/ingest/v1/errors")
+           .with { |req|
+             body = JSON.parse(req.body)
+             body['error']['class'] == 'CustomError' &&
+               body['error']['backtrace'].first.include?('custom_file.rb')
+           }
+           .to_return(status: 201, body: { id: 1, problem_id: 1 }.to_json)
+
+    Checkend.notify({
+      error_class: 'CustomError',
+      message: 'Something happened',
+      backtrace: ['custom_file.rb:10:in `method`']
+    })
+
+    assert_requested stub
+  end
+
+  def test_notify_with_hash_defaults_error_class
+    configure_checkend
+    stub = stub_request(:post, "#{TEST_ENDPOINT}/ingest/v1/errors")
+           .with { |req|
+             body = JSON.parse(req.body)
+             body['error']['class'] == 'Checkend::Notice'
+           }
+           .to_return(status: 201, body: { id: 1, problem_id: 1 }.to_json)
+
+    Checkend.notify({ message: 'Just a message' })
+
+    assert_requested stub
+  end
+
+  def test_notify_sync_with_string
+    configure_checkend
+    stub = stub_request(:post, "#{TEST_ENDPOINT}/ingest/v1/errors")
+           .with { |req|
+             body = JSON.parse(req.body)
+             body['error']['class'] == 'SyncNotification' &&
+               body['error']['message'] == 'Sync message'
+           }
+           .to_return(status: 201, body: { id: 1, problem_id: 1 }.to_json)
+
+    result = Checkend.notify_sync('Sync message', error_class: 'SyncNotification')
+
+    assert_requested stub
+    assert_equal 1, result['id']
+  end
+
+  def test_notify_with_string_includes_thread_local_context
+    configure_checkend
+    Checkend.set_context(tenant_id: 'abc123')
+
+    stub = stub_request(:post, "#{TEST_ENDPOINT}/ingest/v1/errors")
+           .with { |req|
+             body = JSON.parse(req.body)
+             body['context']['tenant_id'] == 'abc123'
+           }
+           .to_return(status: 201, body: { id: 1, problem_id: 1 }.to_json)
+
+    Checkend.notify('Custom notification')
+
+    assert_requested stub
+  end
+
+  def test_notify_with_string_includes_thread_local_user
+    configure_checkend
+    Checkend.set_user(id: 789, email: 'user@example.com')
+
+    stub = stub_request(:post, "#{TEST_ENDPOINT}/ingest/v1/errors")
+           .with { |req|
+             body = JSON.parse(req.body)
+             body['user']['id'] == 789
+           }
+           .to_return(status: 201, body: { id: 1, problem_id: 1 }.to_json)
+
+    Checkend.notify('Custom notification')
+
+    assert_requested stub
+  end
+
+  def test_notify_returns_nil_for_unsupported_type
+    configure_checkend
+
+    result = Checkend.notify(12345)
+
+    assert_nil result
+  end
 end

@@ -77,27 +77,44 @@ module Checkend
 
     # ========== Primary API ==========
 
-    # Report an exception to Checkend
+    # Report an error or custom notification to Checkend
     #
-    # @param exception [Exception] the exception to report
+    # Accepts an Exception, String message, or Hash with error details.
+    #
+    # @param exception_or_message [Exception, String, Hash] the error to report
+    #   - Exception: reports the exception with its class, message, and backtrace
+    #   - String: reports a custom notification with the string as the message
+    #   - Hash: reports a custom notification with :error_class, :message, :backtrace
+    # @param error_class [String] custom error class (only used with String messages)
     # @param context [Hash] additional context data
     # @param request [Hash] request information
     # @param user [Hash] user information
     # @param fingerprint [String] custom fingerprint for grouping
     # @param tags [Array<String>] tags for filtering
     # @return [Hash, nil] the API response or nil if not sent
-    def notify(exception, context: {}, request: nil, user: nil, fingerprint: nil, tags: [])
+    #
+    # @example Report an exception
+    #   Checkend.notify(exception)
+    #
+    # @example Report a custom message
+    #   Checkend.notify("User exceeded rate limit", error_class: "RateLimitExceeded")
+    #
+    # @example Report with a hash
+    #   Checkend.notify(error_class: "CustomAlert", message: "Something happened")
+    #
+    def notify(exception_or_message, error_class: nil, context: {}, request: nil, user: nil, fingerprint: nil, tags: [])
       return nil unless should_notify?
-      return nil if configuration.ignore_exception?(exception)
 
-      notice = NoticeBuilder.build(
-        exception: exception,
+      notice = build_notice(
+        exception_or_message,
+        error_class: error_class,
         context: context,
         request: request,
         user: user,
         fingerprint: fingerprint,
         tags: tags
       )
+      return nil unless notice
 
       # Run before_notify callbacks
       return nil unless before_notify_callbacks_allow?(notice)
@@ -105,17 +122,19 @@ module Checkend
       send_notice(notice)
     end
 
-    # Report an exception synchronously (blocking)
+    # Report an error or custom notification synchronously (blocking)
     #
     # Useful for CLI tools, tests, or when you need confirmation of delivery.
     #
-    # @param exception [Exception] the exception to report
+    # @param exception_or_message [Exception, String, Hash] the error to report
     # @param options [Hash] same options as notify
     # @return [Hash, nil] the API response or nil if not sent
-    def notify_sync(exception, **options)
+    def notify_sync(exception_or_message, **options)
       return nil unless should_notify?
 
-      notice = NoticeBuilder.build(exception: exception, **options)
+      notice = build_notice(exception_or_message, **options)
+      return nil unless notice
+
       client.send_notice(notice)
     end
 
@@ -186,6 +205,24 @@ module Checkend
       return false unless configuration.enabled?
 
       true
+    end
+
+    def build_notice(exception_or_message, error_class: nil, context: {}, request: nil, user: nil, fingerprint: nil, tags: [])
+      options = { context: context, request: request, user: user, fingerprint: fingerprint, tags: tags }
+
+      case exception_or_message
+      when Exception
+        return nil if configuration.ignore_exception?(exception_or_message)
+
+        NoticeBuilder.build(exception: exception_or_message, **options)
+      when String
+        NoticeBuilder.build_from_message(exception_or_message, error_class: error_class, **options)
+      when Hash
+        NoticeBuilder.build_from_hash(exception_or_message, **options)
+      else
+        log_debug("notify called with unsupported type: #{exception_or_message.class}")
+        nil
+      end
     end
 
     def before_notify_callbacks_allow?(notice)

@@ -162,4 +162,174 @@ class NoticeBuilderTest < Minitest::Test
 
     assert_empty notice.backtrace
   end
+
+  # ========== build_from_message tests ==========
+
+  def test_build_from_message_creates_notice
+    notice = Checkend::NoticeBuilder.build_from_message('Something went wrong')
+
+    assert_equal 'Checkend::Notice', notice.error_class
+    assert_equal 'Something went wrong', notice.message
+    assert_empty notice.backtrace
+  end
+
+  def test_build_from_message_with_custom_error_class
+    notice = Checkend::NoticeBuilder.build_from_message(
+      'Rate limit exceeded',
+      error_class: 'RateLimitError'
+    )
+
+    assert_equal 'RateLimitError', notice.error_class
+    assert_equal 'Rate limit exceeded', notice.message
+  end
+
+  def test_build_from_message_with_context
+    notice = Checkend::NoticeBuilder.build_from_message(
+      'Alert message',
+      context: { severity: 'high', source: 'api' }
+    )
+
+    assert_equal 'high', notice.context[:severity]
+    assert_equal 'api', notice.context[:source]
+  end
+
+  def test_build_from_message_with_user
+    notice = Checkend::NoticeBuilder.build_from_message(
+      'User alert',
+      user: { id: 123, email: 'test@example.com' }
+    )
+
+    assert_equal 123, notice.user[:id]
+    assert_equal 'test@example.com', notice.user[:email]
+  end
+
+  def test_build_from_message_with_tags
+    notice = Checkend::NoticeBuilder.build_from_message(
+      'Tagged alert',
+      tags: %w[urgent security]
+    )
+
+    assert_equal %w[urgent security], notice.tags
+  end
+
+  def test_build_from_message_with_fingerprint
+    notice = Checkend::NoticeBuilder.build_from_message(
+      'Custom fingerprint',
+      fingerprint: 'my-custom-fp'
+    )
+
+    assert_equal 'my-custom-fp', notice.fingerprint
+  end
+
+  def test_build_from_message_includes_environment
+    notice = Checkend::NoticeBuilder.build_from_message('Test')
+
+    assert_equal 'test', notice.environment
+  end
+
+  def test_build_from_message_truncates_long_messages
+    long_message = 'a' * 15_000
+
+    notice = Checkend::NoticeBuilder.build_from_message(long_message)
+
+    assert_equal 10_000, notice.message.length
+    assert notice.message.end_with?('...')
+  end
+
+  def test_build_from_message_merges_thread_local_context
+    Thread.current[:checkend_context] = { existing: 'value' }
+
+    notice = Checkend::NoticeBuilder.build_from_message('Test', context: { new_key: 'new' })
+
+    assert_equal 'value', notice.context[:existing]
+    assert_equal 'new', notice.context[:new_key]
+  ensure
+    Thread.current[:checkend_context] = nil
+  end
+
+  # ========== build_from_hash tests ==========
+
+  def test_build_from_hash_creates_notice
+    notice = Checkend::NoticeBuilder.build_from_hash({
+      error_class: 'CustomError',
+      message: 'Something happened'
+    })
+
+    assert_equal 'CustomError', notice.error_class
+    assert_equal 'Something happened', notice.message
+  end
+
+  def test_build_from_hash_with_string_keys
+    notice = Checkend::NoticeBuilder.build_from_hash({
+      'error_class' => 'StringKeyError',
+      'message' => 'Using string keys'
+    })
+
+    assert_equal 'StringKeyError', notice.error_class
+    assert_equal 'Using string keys', notice.message
+  end
+
+  def test_build_from_hash_defaults_error_class
+    notice = Checkend::NoticeBuilder.build_from_hash({ message: 'Just a message' })
+
+    assert_equal 'Checkend::Notice', notice.error_class
+  end
+
+  def test_build_from_hash_with_backtrace
+    notice = Checkend::NoticeBuilder.build_from_hash({
+      error_class: 'CustomError',
+      message: 'With backtrace',
+      backtrace: ['file.rb:10:in `method`', 'file.rb:20:in `caller`']
+    })
+
+    assert_equal 2, notice.backtrace.length
+    assert_includes notice.backtrace.first, 'file.rb:10'
+  end
+
+  def test_build_from_hash_with_fingerprint_in_hash
+    notice = Checkend::NoticeBuilder.build_from_hash({
+      error_class: 'CustomError',
+      message: 'Test',
+      fingerprint: 'hash-fingerprint'
+    })
+
+    assert_equal 'hash-fingerprint', notice.fingerprint
+  end
+
+  def test_build_from_hash_option_fingerprint_overrides_hash
+    notice = Checkend::NoticeBuilder.build_from_hash(
+      { error_class: 'CustomError', fingerprint: 'hash-fp' },
+      fingerprint: 'option-fp'
+    )
+
+    assert_equal 'option-fp', notice.fingerprint
+  end
+
+  def test_build_from_hash_with_tags_in_hash
+    notice = Checkend::NoticeBuilder.build_from_hash({
+      error_class: 'CustomError',
+      message: 'Test',
+      tags: %w[from hash]
+    })
+
+    assert_equal %w[from hash], notice.tags
+  end
+
+  def test_build_from_hash_option_tags_overrides_hash
+    notice = Checkend::NoticeBuilder.build_from_hash(
+      { error_class: 'CustomError', tags: %w[from hash] },
+      tags: %w[from options]
+    )
+
+    assert_equal %w[from options], notice.tags
+  end
+
+  def test_build_from_hash_with_context
+    notice = Checkend::NoticeBuilder.build_from_hash(
+      { error_class: 'CustomError' },
+      context: { key: 'value' }
+    )
+
+    assert_equal 'value', notice.context[:key]
+  end
 end

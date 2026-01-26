@@ -9,6 +9,9 @@ module Checkend
     MAX_BACKTRACE_LINES = 100
     MAX_MESSAGE_LENGTH = 10_000
 
+    # Default error class for custom notifications without an exception
+    DEFAULT_ERROR_CLASS = 'Checkend::Notice'
+
     class << self
       # Build a Notice from an exception
       #
@@ -28,6 +31,70 @@ module Checkend
         notice.backtrace = clean_backtrace(exception.backtrace || [])
         notice.fingerprint = fingerprint
         notice.tags = Array(tags)
+
+        # Merge thread-local context with provided context
+        notice.context = merge_context(context)
+        notice.user = user || thread_local_user
+        notice.request = request || {}
+
+        # Environment
+        notice.environment = Checkend.configuration.environment
+
+        notice
+      end
+
+      # Build a Notice from a message string (custom notification without exception)
+      #
+      # @param message [String] the notification message
+      # @param error_class [String] custom error class name (defaults to 'Checkend::Notice')
+      # @param context [Hash] additional context data
+      # @param request [Hash] request information
+      # @param user [Hash] user information
+      # @param fingerprint [String] custom fingerprint for grouping
+      # @param tags [Array<String>] tags for filtering
+      # @return [Notice] the constructed notice
+      def build_from_message(message, error_class: nil, context: {}, request: nil, user: nil, fingerprint: nil, tags: [])
+        notice = Notice.new
+
+        # Error info - no backtrace for custom notifications
+        notice.error_class = error_class || DEFAULT_ERROR_CLASS
+        notice.message = truncate_message(message)
+        notice.backtrace = []
+        notice.fingerprint = fingerprint
+        notice.tags = Array(tags)
+
+        # Merge thread-local context with provided context
+        notice.context = merge_context(context)
+        notice.user = user || thread_local_user
+        notice.request = request || {}
+
+        # Environment
+        notice.environment = Checkend.configuration.environment
+
+        notice
+      end
+
+      # Build a Notice from a hash (custom notification with full control)
+      #
+      # @param hash [Hash] the notification data
+      # @option hash [String] :error_class custom error class name
+      # @option hash [String] :message the notification message
+      # @option hash [Array<String>] :backtrace optional backtrace
+      # @param context [Hash] additional context data
+      # @param request [Hash] request information
+      # @param user [Hash] user information
+      # @param fingerprint [String] custom fingerprint for grouping
+      # @param tags [Array<String>] tags for filtering
+      # @return [Notice] the constructed notice
+      def build_from_hash(hash, context: {}, request: nil, user: nil, fingerprint: nil, tags: [])
+        notice = Notice.new
+
+        # Error info from hash
+        notice.error_class = hash[:error_class] || hash['error_class'] || DEFAULT_ERROR_CLASS
+        notice.message = truncate_message(hash[:message] || hash['message'])
+        notice.backtrace = clean_backtrace(hash[:backtrace] || hash['backtrace'] || [])
+        notice.fingerprint = fingerprint || hash[:fingerprint] || hash['fingerprint']
+        notice.tags = Array(tags.empty? ? (hash[:tags] || hash['tags'] || []) : tags)
 
         # Merge thread-local context with provided context
         notice.context = merge_context(context)
