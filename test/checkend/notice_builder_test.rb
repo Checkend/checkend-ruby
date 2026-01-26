@@ -250,20 +250,18 @@ class NoticeBuilderTest < Minitest::Test
   # ========== build_from_hash tests ==========
 
   def test_build_from_hash_creates_notice
-    notice = Checkend::NoticeBuilder.build_from_hash({
-      error_class: 'CustomError',
-      message: 'Something happened'
-    })
+    notice = Checkend::NoticeBuilder.build_from_hash(
+      { error_class: 'CustomError', message: 'Something happened' }
+    )
 
     assert_equal 'CustomError', notice.error_class
     assert_equal 'Something happened', notice.message
   end
 
   def test_build_from_hash_with_string_keys
-    notice = Checkend::NoticeBuilder.build_from_hash({
-      'error_class' => 'StringKeyError',
-      'message' => 'Using string keys'
-    })
+    notice = Checkend::NoticeBuilder.build_from_hash(
+      { 'error_class' => 'StringKeyError', 'message' => 'Using string keys' }
+    )
 
     assert_equal 'StringKeyError', notice.error_class
     assert_equal 'Using string keys', notice.message
@@ -276,22 +274,22 @@ class NoticeBuilderTest < Minitest::Test
   end
 
   def test_build_from_hash_with_backtrace
-    notice = Checkend::NoticeBuilder.build_from_hash({
-      error_class: 'CustomError',
-      message: 'With backtrace',
-      backtrace: ['file.rb:10:in `method`', 'file.rb:20:in `caller`']
-    })
+    notice = Checkend::NoticeBuilder.build_from_hash(
+      {
+        error_class: 'CustomError',
+        message: 'With backtrace',
+        backtrace: ['file.rb:10:in `method`', 'file.rb:20:in `caller`']
+      }
+    )
 
     assert_equal 2, notice.backtrace.length
     assert_includes notice.backtrace.first, 'file.rb:10'
   end
 
   def test_build_from_hash_with_fingerprint_in_hash
-    notice = Checkend::NoticeBuilder.build_from_hash({
-      error_class: 'CustomError',
-      message: 'Test',
-      fingerprint: 'hash-fingerprint'
-    })
+    notice = Checkend::NoticeBuilder.build_from_hash(
+      { error_class: 'CustomError', message: 'Test', fingerprint: 'hash-fingerprint' }
+    )
 
     assert_equal 'hash-fingerprint', notice.fingerprint
   end
@@ -306,11 +304,9 @@ class NoticeBuilderTest < Minitest::Test
   end
 
   def test_build_from_hash_with_tags_in_hash
-    notice = Checkend::NoticeBuilder.build_from_hash({
-      error_class: 'CustomError',
-      message: 'Test',
-      tags: %w[from hash]
-    })
+    notice = Checkend::NoticeBuilder.build_from_hash(
+      { error_class: 'CustomError', message: 'Test', tags: %w[from hash] }
+    )
 
     assert_equal %w[from hash], notice.tags
   end

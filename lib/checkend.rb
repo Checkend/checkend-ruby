@@ -207,7 +207,8 @@ module Checkend
       true
     end
 
-    def build_notice(exception_or_message, error_class: nil, context: {}, request: nil, user: nil, fingerprint: nil, tags: [])
+    def build_notice(exception_or_message, error_class: nil, context: {}, request: nil, user: nil,
+                     fingerprint: nil, tags: [])
       options = { context: context, request: request, user: user, fingerprint: fingerprint, tags: tags }
 
       case exception_or_message

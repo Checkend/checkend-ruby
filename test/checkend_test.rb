@@ -263,12 +263,12 @@ class CheckendTest < Minitest::Test
   def test_notify_with_string_message
     configure_checkend
     stub = stub_request(:post, "#{TEST_ENDPOINT}/ingest/v1/errors")
-           .with { |req|
+           .with do |req|
              body = JSON.parse(req.body)
              body['error']['class'] == 'Checkend::Notice' &&
                body['error']['message'] == 'Something went wrong' &&
                body['error']['backtrace'] == []
-           }
+           end
            .to_return(status: 201, body: { id: 1, problem_id: 1 }.to_json)
 
     Checkend.notify('Something went wrong')
@@ -279,11 +279,11 @@ class CheckendTest < Minitest::Test
   def test_notify_with_string_and_custom_error_class
     configure_checkend
     stub = stub_request(:post, "#{TEST_ENDPOINT}/ingest/v1/errors")
-           .with { |req|
+           .with do |req|
              body = JSON.parse(req.body)
              body['error']['class'] == 'RateLimitExceeded' &&
                body['error']['message'] == 'User exceeded rate limit'
-           }
+           end
            .to_return(status: 201, body: { id: 1, problem_id: 1 }.to_json)
 
     Checkend.notify('User exceeded rate limit', error_class: 'RateLimitExceeded')
@@ -294,11 +294,11 @@ class CheckendTest < Minitest::Test
   def test_notify_with_string_and_context
     configure_checkend
     stub = stub_request(:post, "#{TEST_ENDPOINT}/ingest/v1/errors")
-           .with { |req|
+           .with do |req|
              body = JSON.parse(req.body)
              body['error']['message'] == 'Custom alert' &&
                body['context']['severity'] == 'high'
-           }
+           end
            .to_return(status: 201, body: { id: 1, problem_id: 1 }.to_json)
 
     Checkend.notify('Custom alert', context: { severity: 'high' })
@@ -309,11 +309,11 @@ class CheckendTest < Minitest::Test
   def test_notify_with_hash
     configure_checkend
     stub = stub_request(:post, "#{TEST_ENDPOINT}/ingest/v1/errors")
-           .with { |req|
+           .with do |req|
              body = JSON.parse(req.body)
              body['error']['class'] == 'DataValidationError' &&
                body['error']['message'] == 'Invalid email format'
-           }
+           end
            .to_return(status: 201, body: { id: 1, problem_id: 1 }.to_json)
 
     Checkend.notify({ error_class: 'DataValidationError', message: 'Invalid email format' })
@@ -324,18 +324,20 @@ class CheckendTest < Minitest::Test
   def test_notify_with_hash_and_backtrace
     configure_checkend
     stub = stub_request(:post, "#{TEST_ENDPOINT}/ingest/v1/errors")
-           .with { |req|
+           .with do |req|
              body = JSON.parse(req.body)
              body['error']['class'] == 'CustomError' &&
                body['error']['backtrace'].first.include?('custom_file.rb')
-           }
+           end
            .to_return(status: 201, body: { id: 1, problem_id: 1 }.to_json)
 
-    Checkend.notify({
-      error_class: 'CustomError',
-      message: 'Something happened',
-      backtrace: ['custom_file.rb:10:in `method`']
-    })
+    Checkend.notify(
+      {
+        error_class: 'CustomError',
+        message: 'Something happened',
+        backtrace: ['custom_file.rb:10:in `method`']
+      }
+    )
 
     assert_requested stub
   end
@@ -343,10 +345,10 @@ class CheckendTest < Minitest::Test
   def test_notify_with_hash_defaults_error_class
     configure_checkend
     stub = stub_request(:post, "#{TEST_ENDPOINT}/ingest/v1/errors")
-           .with { |req|
+           .with do |req|
              body = JSON.parse(req.body)
              body['error']['class'] == 'Checkend::Notice'
-           }
+           end
            .to_return(status: 201, body: { id: 1, problem_id: 1 }.to_json)
 
     Checkend.notify({ message: 'Just a message' })
@@ -357,11 +359,11 @@ class CheckendTest < Minitest::Test
   def test_notify_sync_with_string
     configure_checkend
     stub = stub_request(:post, "#{TEST_ENDPOINT}/ingest/v1/errors")
-           .with { |req|
+           .with do |req|
              body = JSON.parse(req.body)
              body['error']['class'] == 'SyncNotification' &&
                body['error']['message'] == 'Sync message'
-           }
+           end
            .to_return(status: 201, body: { id: 1, problem_id: 1 }.to_json)
 
     result = Checkend.notify_sync('Sync message', error_class: 'SyncNotification')
@@ -375,10 +377,10 @@ class CheckendTest < Minitest::Test
     Checkend.set_context(tenant_id: 'abc123')
 
     stub = stub_request(:post, "#{TEST_ENDPOINT}/ingest/v1/errors")
-           .with { |req|
+           .with do |req|
              body = JSON.parse(req.body)
              body['context']['tenant_id'] == 'abc123'
-           }
+           end
            .to_return(status: 201, body: { id: 1, problem_id: 1 }.to_json)
 
     Checkend.notify('Custom notification')
@@ -391,10 +393,10 @@ class CheckendTest < Minitest::Test
     Checkend.set_user(id: 789, email: 'user@example.com')
 
     stub = stub_request(:post, "#{TEST_ENDPOINT}/ingest/v1/errors")
-           .with { |req|
+           .with do |req|
              body = JSON.parse(req.body)
              body['user']['id'] == 789
-           }
+           end
            .to_return(status: 201, body: { id: 1, problem_id: 1 }.to_json)
 
     Checkend.notify('Custom notification')
@@ -405,7 +407,7 @@ class CheckendTest < Minitest::Test
   def test_notify_returns_nil_for_unsupported_type
     configure_checkend
 
-    result = Checkend.notify(12345)
+    result = Checkend.notify(12_345)
 
     assert_nil result
   end

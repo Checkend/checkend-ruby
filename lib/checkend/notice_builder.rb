@@ -53,7 +53,8 @@ module Checkend
       # @param fingerprint [String] custom fingerprint for grouping
       # @param tags [Array<String>] tags for filtering
       # @return [Notice] the constructed notice
-      def build_from_message(message, error_class: nil, context: {}, request: nil, user: nil, fingerprint: nil, tags: [])
+      def build_from_message(message, error_class: nil, context: {}, request: nil, user: nil,
+                             fingerprint: nil, tags: [])
         notice = Notice.new
 
         # Error info - no backtrace for custom notifications
@@ -88,26 +89,31 @@ module Checkend
       # @return [Notice] the constructed notice
       def build_from_hash(hash, context: {}, request: nil, user: nil, fingerprint: nil, tags: [])
         notice = Notice.new
-
-        # Error info from hash
-        notice.error_class = hash[:error_class] || hash['error_class'] || DEFAULT_ERROR_CLASS
-        notice.message = truncate_message(hash[:message] || hash['message'])
-        notice.backtrace = clean_backtrace(hash[:backtrace] || hash['backtrace'] || [])
-        notice.fingerprint = fingerprint || hash[:fingerprint] || hash['fingerprint']
-        notice.tags = Array(tags.empty? ? (hash[:tags] || hash['tags'] || []) : tags)
-
-        # Merge thread-local context with provided context
-        notice.context = merge_context(context)
-        notice.user = user || thread_local_user
-        notice.request = request || {}
-
-        # Environment
+        populate_notice_from_hash(notice, hash, fingerprint, tags)
+        populate_notice_context(notice, context, request, user)
         notice.environment = Checkend.configuration.environment
-
         notice
       end
 
       private
+
+      def populate_notice_from_hash(notice, hash, fingerprint, tags)
+        notice.error_class = hash_value(hash, :error_class) || DEFAULT_ERROR_CLASS
+        notice.message = truncate_message(hash_value(hash, :message))
+        notice.backtrace = clean_backtrace(hash_value(hash, :backtrace) || [])
+        notice.fingerprint = fingerprint || hash_value(hash, :fingerprint)
+        notice.tags = Array(tags.empty? ? (hash_value(hash, :tags) || []) : tags)
+      end
+
+      def populate_notice_context(notice, context, request, user)
+        notice.context = merge_context(context)
+        notice.user = user || thread_local_user
+        notice.request = request || {}
+      end
+
+      def hash_value(hash, key)
+        hash[key] || hash[key.to_s]
+      end
 
       def clean_backtrace(backtrace)
         root_path = Checkend.configuration.root_path
