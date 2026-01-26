@@ -51,6 +51,9 @@ module Checkend
     attr_accessor :logger
     attr_accessor :debug
 
+    # Security event capture
+    attr_accessor :capture_csrf_events
+
     DEFAULT_FILTER_KEYS = %w[
       password
       password_confirmation
@@ -101,6 +104,7 @@ module Checkend
       @max_queue_size = 1000
       @shutdown_timeout = 5
       @debug = ENV.fetch('CHECKEND_DEBUG', 'false') == 'true'
+      @capture_csrf_events = false
     end
 
     # Check if configuration is valid for sending errors

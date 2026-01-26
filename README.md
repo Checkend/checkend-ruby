@@ -180,6 +180,29 @@ Checkend::Integrations::ActiveJob.install!
 
 Note: If using Sidekiq as your ActiveJob backend, use the Sidekiq integration instead for better context.
 
+### CSRF Security Events (Rails 8.2+)
+
+Rails 8.2+ emits Active Support notifications for CSRF security events. Checkend can capture these to provide visibility into potential CSRF attacks:
+
+```ruby
+Checkend.configure do |config|
+  # Capture blocked CSRF requests (recommended)
+  config.capture_csrf_events = :blocked
+
+  # Or capture all CSRF events including informational fallbacks
+  config.capture_csrf_events = :all
+end
+```
+
+**Event types captured:**
+- `csrf_request_blocked` - Request blocked due to CSRF token failure
+- `csrf_javascript_blocked` - Cross-origin JavaScript blocked
+- `csrf_token_fallback` - Token verification fell back (only with `:all`)
+
+Each event includes controller, action, `Sec-Fetch-Site` header value, and request data. Events appear as security errors with synthetic class names like `Checkend::Security::CsrfRequestBlocked`.
+
+**Note:** This feature requires Rails 8.2+. On older Rails versions, the setting is ignored and a debug message is logged.
+
 ## Testing
 
 Use the Testing module to capture notices without sending them:

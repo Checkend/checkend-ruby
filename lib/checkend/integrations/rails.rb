@@ -108,6 +108,23 @@ if defined?(Rails::Railtie)
               include Checkend::Integrations::Rails::ControllerMethods
             end
           end
+
+          initializer 'checkend.csrf_subscriber', after: 'checkend.configure' do
+            config.after_initialize do
+              if Checkend.configuration.capture_csrf_events
+                require 'checkend/integrations/rails/csrf_subscriber'
+
+                if CsrfSubscriber.rails_supports_csrf_events?
+                  CsrfSubscriber.subscribe!
+                  Checkend.logger.debug('[Checkend] CSRF event capture enabled')
+                else
+                  Checkend.logger.debug(
+                    '[Checkend] CSRF event capture requires Rails 8.2+, skipping'
+                  )
+                end
+              end
+            end
+          end
         end
       end
     end
